@@ -9,23 +9,20 @@ using namespace std;
 
 void get_URL( const string& host, const string& path )
 {
-  Address url_addr(host, "http");
+  Address url_addr(host, "80");
   TCPSocket sock;
   sock.connect(url_addr);
   string message;
-  message += "GET " + path + " HTTP/1.1\r\n";
-  message += "Host: " + host + "\r\n";
-  
+  message += "GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\nConnection: close\r\n\r\n";
+  cout << message;
   string s;
-
+  sock.write(message);
   while(!sock.eof()) {
     sock.read(s);
+    cout << s;
   }
-  cout << s + " <- this is s";
-  message += s;
-  message += "Connection: close\r\n";
-  cout << message;
-  return;
+
+  
 
 }
 
