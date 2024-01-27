@@ -12,18 +12,19 @@ void get_URL( const string& host, const string& path )
   Address url_addr(host, "http");
   TCPSocket sock;
   sock.connect(url_addr);
-  string message = "";
-  message += "GET" + path + "HTTP/1.1\r\n";
+  string message;
+  message += "GET " + path + " HTTP/1.1\r\n";
   message += "Host: " + host + "\r\n";
-  message += "Connection: close\r\n";
+  
   string s;
-  sock.write(s);
 
-
-  while(sock.eof()) {
-    sock.read(message);
-    cout << s;
+  while(!sock.eof()) {
+    sock.read(s);
   }
+  cout << s + " <- this is s";
+  message += s;
+  message += "Connection: close\r\n";
+  cout << message;
   return;
 
 }
