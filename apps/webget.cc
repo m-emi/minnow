@@ -15,11 +15,11 @@ void get_URL( const string& host, const string& path )
   string message;
   message += "GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\nConnection: close\r\n\r\n";
   cout << message;
-  string s;
+  string buf;
   sock.write(message);
   while(!sock.eof()) {
-    sock.read(s);
-    cout << s;
+    sock.read(buf);
+    cout << buf;
   }
 
   
