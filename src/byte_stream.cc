@@ -11,8 +11,8 @@ bool Writer::is_closed() const
 
 void Writer::push( string data )
 {
-  if (data.size() > available_capacity()) {
-    data.resize(available_capacity());
+  if ( data.size() > available_capacity() ) {
+    data.resize( available_capacity() );
   }
   buf_ += data;
   bytes_pushed_ += data.size();
@@ -30,12 +30,12 @@ uint64_t Writer::available_capacity() const
 
 uint64_t Writer::bytes_pushed() const
 {
-  return bytes_pushed_; 
+  return bytes_pushed_;
 }
 
 bool Reader::is_finished() const
 {
-  if (buf_.empty() && closed_) {
+  if ( buf_.empty() && closed_ ) {
     return true;
   }
   return false;
@@ -53,10 +53,10 @@ string_view Reader::peek() const
 
 void Reader::pop( uint64_t len )
 {
-  if (len > buf_.size()) {
+  if ( len > buf_.size() ) {
     len = buf_.size();
   }
-  buf_.erase(0, len);
+  buf_.erase( 0, len );
   bytes_popped_ += len;
 }
 
