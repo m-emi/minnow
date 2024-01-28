@@ -30,10 +30,8 @@ protected:
 
   bool closed_ {};
   
-  uint64_t bytes_pushed_;
-  uint64_t bytes_popped_;
-
-
+  uint64_t bytes_pushed_ {};
+  uint64_t bytes_popped_ {};
 };
 
 class Writer : public ByteStream

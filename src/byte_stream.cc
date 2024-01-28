@@ -11,8 +11,11 @@ bool Writer::is_closed() const
 
 void Writer::push( string data )
 {
+  if (data.size() > available_capacity()) {
+    data.resize(available_capacity());
+  }
   buf_ += data;
-  return;
+  bytes_pushed_ += data.size();
 }
 
 void Writer::close()
@@ -50,6 +53,9 @@ string_view Reader::peek() const
 
 void Reader::pop( uint64_t len )
 {
+  if (len > buf_.size()) {
+    len = buf_.size();
+  }
   buf_.erase(0, len);
 }
 
