@@ -6,13 +6,12 @@ ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ) {}
 
 bool Writer::is_closed() const
 {
-  // Your code here.
-  return {};
+  return closed_;
 }
 
 void Writer::push( string data )
 {
-  buf += data;
+  buf_ += data;
   return;
 }
 
@@ -23,8 +22,7 @@ void Writer::close()
 
 uint64_t Writer::available_capacity() const
 {
-  // Your code here.
-  return {};
+  return capacity_ - buf_.size();
 }
 
 uint64_t Writer::bytes_pushed() const
@@ -47,8 +45,7 @@ uint64_t Reader::bytes_popped() const
 
 string_view Reader::peek() const
 {
-  // Your code here.
-  return {};
+  
 }
 
 void Reader::pop( uint64_t len )
