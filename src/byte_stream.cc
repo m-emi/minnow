@@ -33,15 +33,14 @@ uint64_t Writer::bytes_pushed() const
 bool Reader::is_finished() const
 {
   if (closed_) {
-    return true
+    return true;
   }
   return false;
 }
 
 uint64_t Reader::bytes_popped() const
 {
-  // Your code here.
-  return {};
+  return bytes_popped_;
 }
 
 string_view Reader::peek() const
@@ -51,8 +50,7 @@ string_view Reader::peek() const
 
 void Reader::pop( uint64_t len )
 {
-  // Your code here.
-  (void)len;
+  buf_.erase(0, len);
 }
 
 uint64_t Reader::bytes_buffered() const
