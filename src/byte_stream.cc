@@ -12,14 +12,13 @@ bool Writer::is_closed() const
 
 void Writer::push( string data )
 {
-  // Your code here.
-  (void)data;
+  buf += data;
   return;
 }
 
 void Writer::close()
 {
-  // Your code here.
+  closed_ = true;
 }
 
 uint64_t Writer::available_capacity() const
