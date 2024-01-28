@@ -57,6 +57,7 @@ void Reader::pop( uint64_t len )
     len = buf_.size();
   }
   buf_.erase(0, len);
+  bytes_popped_ += len;
 }
 
 uint64_t Reader::bytes_buffered() const
