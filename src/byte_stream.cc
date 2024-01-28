@@ -35,7 +35,7 @@ uint64_t Writer::bytes_pushed() const
 
 bool Reader::is_finished() const
 {
-  if (closed_) {
+  if (buf_.empty() && closed_) {
     return true;
   }
   return false;
