@@ -30,6 +30,7 @@ protected:
 
   bool closed_ {};
   
+  uint64_t bytes_pushed_;
 
 
 };
