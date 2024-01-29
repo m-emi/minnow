@@ -12,6 +12,11 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
 
 uint64_t Reassembler::bytes_pending() const
 {
-  // Your code here.
-  return {};
+  uint64_t count = 0;
+  for (int i = 0; i < bitmap_.size(); i++) {
+    if (bitmap_[i]) {
+      count++;
+    }
+  }
+  return count;
 }
