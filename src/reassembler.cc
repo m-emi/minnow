@@ -4,12 +4,7 @@ using namespace std;
 
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring )
 {
-  // Your code here.
-  (void)first_index;
-  (void)data;
   (void)is_last_substring;
-
-
   // Red region after first unassembled index and before first unacceptable index
   unassembled_bytes_.resize(output_.writer().available_capacity());
   bitmap_.resize(output_.writer().available_capacity());
@@ -20,15 +15,31 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
                   output_.writer().available_capacity();
 
 
-  // Find first part of data to add to unassembled_bytes.  
-  // May not always be data.begin()
-  const uint64_t sub_data_start = 0;
+  // Find first part of data to add to unassembled_bytes. May not always be 
+  // data.begin() because part of data might be before first_unassembled_index
+  const uint64_t sub_data_start = max(first_unassembled_index, first_index);
   // Find last part of data to add to unassembled_bytes.
   // May not always be data.end() because it can be cut off by
   // first unacceptable index
-  const uint64_t sub_data_end = 0;
+  const uint64_t sub_data_end = min(first_unacceptable_index, data.size());
 
-  copy(data.begin(), data.begin() + data.size()  )
+  // copy sub_data into apppropriate part of unassembled_bytes
+  copy(data.begin() + sub_data_start - first_index, 
+       data.begin() + sub_data_end - first_index,
+       unassembled_bytes_.begin() + sub_data_start - first_unassembled_index);
+
+  // Push bytes into the bytestream
+  const int64_t index = 0;
+  while (bitmap_[index]) {
+    output_.writer().push(unassembled_bytes_.substr(0,1));
+    unassembled_bytes_.erase(0, 1);
+    bitmap_.erase(bitmap_.begin());
+  }
+
+
+
+  
+
 
 
 
