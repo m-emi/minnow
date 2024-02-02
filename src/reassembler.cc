@@ -8,18 +8,17 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
 {
   
   // Red region after first unassembled index and before first unacceptable index
-  unassembled_bytes_.resize(output_.writer().available_capacity());
-  bitmap_.resize(output_.writer().available_capacity());
+  unassembled_bytes_.resize(writer().available_capacity());
+  bitmap_.resize( writer().available_capacity() );
 
   if (is_last_substring) {
     total_size_.emplace(first_index + data.size());
   }
 
-  const uint64_t first_unassembled_index = output_.writer().bytes_pushed();
+  const uint64_t first_unassembled_index = writer().bytes_pushed();
   // Discard bytes after this index
   const uint64_t first_unacceptable_index = first_unassembled_index + 
-                  output_.writer().available_capacity();
-
+                  writer().available_capacity();
 
   // Find first part of data to add to unassembled_bytes. May not always be 
   // data.begin() because part of data might be before first_unassembled_index
@@ -36,17 +35,18 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
        unassembled_bytes_.begin() + sub_data_start - first_unassembled_index);
 
   fill(bitmap_.begin() + sub_data_start - first_unassembled_index,
-        bitmap_.begin() + sub_data_end - first_unassembled_index,
-        true);
+       bitmap_.begin() + sub_data_end - first_unassembled_index,
+       true);
   }
 
   // Push bytes into the bytestream
+  const uint64_t count = ranges::find(bitmap_, false) - bitmap_.begin();
 
-  uint64_t count = 0;
-  while (bitmap_[0]) {
-    count++;
-  }
-  output_.writer().push(unassembled_bytes_.substr(0, count));
+  // uint64_t count = 0;
+  // while (bitmap_[0]) {
+  //   count++;
+  // }
+  writer().push(unassembled_bytes_.substr(0, count));
   unassembled_bytes_.erase(0, count);
   bitmap_.erase(bitmap_.begin(), bitmap_.begin() + count);
   // while (bitmap_[0]) {
@@ -56,8 +56,8 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   // }
 
   if (total_size_.has_value() and total_size_.value() == 
-      output_.writer().bytes_pushed() ) {
-        output_.writer().close();
+      writer().bytes_pushed() ) {
+        writer().close();
   }
 }
 

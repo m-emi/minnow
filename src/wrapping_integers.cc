@@ -14,7 +14,7 @@ uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
   uint64_t low_diff = checkpoint - wrapped_checkpoint.raw_value_;
   
   // Underflow has occured. 
-  if (low_diff > checkpoint) {
+  if (low_diff > checkpoint || ) {
     return checkpoint + high_diff;
   }
   if (low_diff > high_diff) {

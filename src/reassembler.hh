@@ -48,4 +48,6 @@ private:
   std::string unassembled_bytes_ {}; 
   std::vector<bool> bitmap_ {};
   std::optional<uint64_t> total_size_ {};
+
+  Writer& writer() { return output_.writer(); }
 };
