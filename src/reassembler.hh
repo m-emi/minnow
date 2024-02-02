@@ -2,6 +2,7 @@
 
 #include "byte_stream.hh"
 #include <vector>
+#include <optional>
 
 class Reassembler
 {
@@ -46,5 +47,5 @@ private:
 
   std::string unassembled_bytes_ {}; 
   std::vector<bool> bitmap_ {};
-
+  std::optional<uint64_t> total_size_ {};
 };

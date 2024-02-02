@@ -1,13 +1,19 @@
 #include "reassembler.hh"
+#include <algorithm>
+#include <numeric>
 
 using namespace std;
 
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring )
 {
-  (void)is_last_substring;
+  
   // Red region after first unassembled index and before first unacceptable index
   unassembled_bytes_.resize(output_.writer().available_capacity());
   bitmap_.resize(output_.writer().available_capacity());
+
+  if (is_last_substring) {
+    total_size_.emplace(first_index + data.size());
+  }
 
   const uint64_t first_unassembled_index = output_.writer().bytes_pushed();
   // Discard bytes after this index
@@ -21,45 +27,48 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   // Find last part of data to add to unassembled_bytes.
   // May not always be data.end() because it can be cut off by
   // first unacceptable index
-  const uint64_t sub_data_end = min(first_unacceptable_index, data.size());
+  const uint64_t sub_data_end = min(first_unacceptable_index, first_index + data.size());
 
   // copy sub_data into apppropriate part of unassembled_bytes
+  if (sub_data_start < sub_data_end) {
   copy(data.begin() + sub_data_start - first_index, 
        data.begin() + sub_data_end - first_index,
        unassembled_bytes_.begin() + sub_data_start - first_unassembled_index);
 
-  // Push bytes into the bytestream
-  const int64_t index = 0;
-  while (bitmap_[index]) {
-    output_.writer().push(unassembled_bytes_.substr(0,1));
-    unassembled_bytes_.erase(0, 1);
-    bitmap_.erase(bitmap_.begin());
+  fill(bitmap_.begin() + sub_data_start - first_unassembled_index,
+        bitmap_.begin() + sub_data_end - first_unassembled_index,
+        true);
   }
 
+  // Push bytes into the bytestream
 
+  uint64_t count = 0;
+  while (bitmap_[0]) {
+    count++;
+  }
+  output_.writer().push(unassembled_bytes_.substr(0, count));
+  unassembled_bytes_.erase(0, count);
+  bitmap_.erase(bitmap_.begin(), bitmap_.begin() + count);
+  // while (bitmap_[0]) {
+  //   output_.writer().push(unassembled_bytes_.substr(0,1));
+  //   unassembled_bytes_.erase(0, 1);
+  //   bitmap_.erase(bitmap_.begin());
+  // }
 
-  
-
-
-
-
-
-
-
-
-
-// Push assembled bytes
-
-
+  if (total_size_.has_value() and total_size_.value() == 
+      output_.writer().bytes_pushed() ) {
+        output_.writer().close();
+  }
 }
 
 uint64_t Reassembler::bytes_pending() const
 {
-  uint64_t count = 0;
-  for (int i = 0; i < bitmap_.size(); i++) {
-    if (bitmap_[i]) {
-      count++;
-    }
-  }
-  return count;
+  // uint64_t count = 0;
+  // for (uint64_t i = 0; i < bitmap_.size(); i++) {
+  //   if (bitmap_[i]) {
+  //     count++;
+  //   }
+  // }
+  // return count;
+  return accumulate(bitmap_.begin(), bitmap_.end(), 0);
 }
