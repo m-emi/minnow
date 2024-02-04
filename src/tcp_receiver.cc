@@ -30,18 +30,23 @@ void TCPReceiver::receive( TCPSenderMessage message )
   
   }
 
-  if (message.FIN) {
-    //this segment is the end of the byte stream
-    // close conversation once FIN flag is received
-    uint64_t abs_seqno = message.seqno.unwrap(message.seqno, writer().bytes_pushed());
-    uint64_t stream_index = abs_seqno - 1;
-    reassembler_.insert(stream_index, message.payload, message.FIN);
-  }
+  // if (message.FIN) {
+  //   //this segment is the end of the byte stream
+  //   // close conversation once FIN flag is received
+  //   uint64_t abs_seqno = message.seqno.unwrap(message.seqno, writer().bytes_pushed());
+  //   uint64_t stream_index = abs_seqno - 1;
+  //   reassembler_.insert(stream_index, message.payload, message.FIN);
+  // }
 
 }
 
 TCPReceiverMessage TCPReceiver::send() const
 {
-  // Your code here.
-  return {};
+  TCPReceiverMessage message;
+  if (ISN.has_value()) {
+    message.ackno.value() = Wrap32::wrap(writer().bytes_pushed(), ISN.value());
+  }
+  // available capacity
+  message.window_size = writer().available_capacity();
+  return message;
 }
