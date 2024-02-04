@@ -10,8 +10,6 @@ void TCPReceiver::receive( TCPSenderMessage message )
   // Unwrap gets you absolute sequence number
   // Find stream index.
   // Should be absolute seqno - 1
-  uint64_t abs_seqno = message.seqno.unwrap(message.seqno, writer().bytes_pushed());
-  uint64_t stream_index = abs_seqno - 1;
 
   if (message.SYN) {
     // this segment is beginning of the byte stream
@@ -27,16 +25,9 @@ void TCPReceiver::receive( TCPSenderMessage message )
       }
       else if (!message.SYN && !message.FIN) 
       {
-        
+        reassembler_.insert(abs_seqno, message.payload, message.FIN);
       }
-      
-
-
-
-  }
-
-  if (!message.SYN && !message.FIN) {
-    reassembler_.insert(stream_index, message.payload, false);
+  
   }
 
   if (message.FIN) {
@@ -47,9 +38,6 @@ void TCPReceiver::receive( TCPSenderMessage message )
     reassembler_.insert(stream_index, message.payload, message.FIN);
   }
 
-  if (reassembler_.reader().is_closed()) {
-
-  }
 }
 
 TCPReceiverMessage TCPReceiver::send() const
