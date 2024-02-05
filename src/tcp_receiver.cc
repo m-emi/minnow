@@ -5,7 +5,7 @@ using namespace std;
 void TCPReceiver::receive( TCPSenderMessage message )
 {
   if (message.RST) {
-    // use set_error() from bytestream
+    reader().set_error();
   }
   // Unwrap gets you absolute sequence number
   // Find stream index.
@@ -18,14 +18,14 @@ void TCPReceiver::receive( TCPSenderMessage message )
   }
   // Conversation can be started
   if (ISN.has_value()) {
-      uint64_t abs_seqno = message.seqno.unwrap(ISN.value(), writer().bytes_pushed());
+      uint64_t abs_seqno = message.seqno.unwrap(ISN.value(), writer().bytes_pushed()) + 1;
 
       if (message.SYN && !message.FIN) {
         reassembler_.insert(0, message.payload, message.FIN);
       }
       else if (!message.SYN && !message.FIN) 
       {
-        reassembler_.insert(abs_seqno, message.payload, message.FIN);
+        reassembler_.insert(abs_seqno + 1, message.payload, message.FIN);
       }
   
   }
@@ -44,9 +44,17 @@ TCPReceiverMessage TCPReceiver::send() const
 {
   TCPReceiverMessage message;
   if (ISN.has_value()) {
-    message.ackno.value() = Wrap32::wrap(writer().bytes_pushed(), ISN.value());
+
+    message.ackno = Wrap32::wrap(writer().bytes_pushed(), ISN.value() + 1);
+
+
+    uint32_t offset = 1;
+    message.ackno = message.ackno.value() + offset;
   }
-  // available capacity
+
   message.window_size = writer().available_capacity();
+  if (writer().has_error()) {
+    message.RST = true;
+  }
   return message;
 }
