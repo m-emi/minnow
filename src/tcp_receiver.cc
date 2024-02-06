@@ -18,7 +18,6 @@ void TCPReceiver::receive( TCPSenderMessage message )
     // this segment is beginning of the byte stream
     // don't start conversation until SYN flag is receieved 
     ISN = message.seqno; 
-    cerr << ISN.has_value();
   }
   if (message.FIN)
   {
@@ -57,24 +56,33 @@ TCPReceiverMessage TCPReceiver::send() const
 
   if (ISN.has_value()) 
   {
-    // Check if FIN flag has been received and byte stream is fully popped and closed
-    if (FIN_recieved && reader().is_finished())
+    if (writer().is_closed()) 
     {
-      cerr << "case 1";
       message.ackno = Wrap32::wrap(writer().bytes_pushed() + 2, ISN.value() );
     }
-    // FIN flag received, but byte stream not yet finished
-    else if (FIN_recieved && !reader().is_finished())
-    {
-      cerr << "case 2";
-      message.ackno = Wrap32::wrap(writer().bytes_pushed() + 1, ISN.value() );
-    }
-    // Only SYN flag has been received
     else
     {
-      cerr << "case 3";
       message.ackno = Wrap32::wrap(writer().bytes_pushed() + 1, ISN.value() );
     }
+    
+    // // Check if FIN flag has been received and byte stream is fully popped and closed
+    // if (FIN_recieved && reader().is_finished())
+    // {
+    //   cerr << "case 1";
+    //   message.ackno = Wrap32::wrap(writer().bytes_pushed() + 2, ISN.value() );
+    // }
+    // // FIN flag received, but byte stream not yet finished
+    // else if (FIN_recieved && !reader().is_finished())
+    // {
+    //   cerr << "case 2";
+    //   message.ackno = Wrap32::wrap(writer().bytes_pushed() + 1, ISN.value() );
+    // }
+    // // Only SYN flag has been received
+    // else
+    // {
+    //   cerr << "case 3";
+    //   message.ackno = Wrap32::wrap(writer().bytes_pushed() + 1, ISN.value() );
+    // }
   }
 
   //account for max window size
