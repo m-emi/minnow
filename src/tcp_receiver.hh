@@ -28,4 +28,5 @@ public:
 private:
   Reassembler reassembler_;
   std::optional<Wrap32> ISN;
+  bool FIN_recieved {};
 };
