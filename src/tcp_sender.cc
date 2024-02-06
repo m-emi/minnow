@@ -17,7 +17,21 @@ uint64_t TCPSender::consecutive_retransmissions() const
 
 void TCPSender::push( const TransmitFunction& transmit )
 {
-  // Your code here.
+  // TCPSender asked to fill the window
+  // reads from the stream and sends as many TCPSenderMessages as possible as long as there are new bytes to be read and space in the window
+
+  // make sure each TCPSenderMessage fits fully inside receiver's window
+  // make each individual message as big as possible, but no bigger than MAX_PAYLOAD_SIZE
+
+  // use TCPSenderMEssage::sequence_length() to count total number of sequence numbers occupied by segment
+    // SYN and FIN also occupy space in window
+
+
+  // Use read helper function from bytestream, it peeks and pops
+
+
+
+
   (void)transmit;
 }
 
