@@ -13,8 +13,6 @@ void TCPReceiver::receive( TCPSenderMessage message )
   // Unwrap gets you absolute sequence number
   // Find stream index.
   // Should be absolute seqno - 1
-  cerr << message.SYN;
-  cout << message.SYN;
   if (message.SYN) 
   {
     // this segment is beginning of the byte stream
@@ -22,7 +20,6 @@ void TCPReceiver::receive( TCPSenderMessage message )
     ISN = message.seqno; 
     cerr << ISN.has_value();
   }
-
   if (message.FIN)
   {
     // last segment of the bytestream has been sent
@@ -33,7 +30,6 @@ void TCPReceiver::receive( TCPSenderMessage message )
   // // Conversation can be started
   if (ISN.has_value()) 
   {
-      //uint64_t abs_seqno = message.seqno.unwrap(ISN.value(), writer().bytes_pushed());
       uint64_t stream_index = message.seqno.unwrap(ISN.value(), writer().bytes_pushed()) - 1;
 
       if (message.SYN && !message.FIN) 
@@ -64,16 +60,19 @@ TCPReceiverMessage TCPReceiver::send() const
     // Check if FIN flag has been received and byte stream is fully popped and closed
     if (FIN_recieved && reader().is_finished())
     {
+      cerr << "case 1";
       message.ackno = Wrap32::wrap(writer().bytes_pushed() + 2, ISN.value() );
     }
     // FIN flag received, but byte stream not yet finished
     else if (FIN_recieved && !reader().is_finished())
     {
+      cerr << "case 2";
       message.ackno = Wrap32::wrap(writer().bytes_pushed() + 1, ISN.value() );
     }
     // Only SYN flag has been received
     else
     {
+      cerr << "case 3";
       message.ackno = Wrap32::wrap(writer().bytes_pushed() + 1, ISN.value() );
     }
   }
