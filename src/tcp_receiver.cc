@@ -31,26 +31,13 @@ void TCPReceiver::receive( TCPSenderMessage message )
       stream_index = message.seqno.unwrap(ISN.value(), writer().bytes_pushed()) - 1;
     }
      //uint64_t stream_index = message.seqno.unwrap(ISN.value(), writer().bytes_pushed()) - 1;
-    reassembler_.insert(stream_index, message.payload, message.FIN);
-
-      // if (message.SYN && !message.FIN) 
-      // {
-      //   reassembler_.insert(stream_index, message.payload, message.FIN);
-      // }
-
-      // else if (message.SYN && message.FIN) 
-      // {
-      //   reassembler_.insert(stream_index + 1, message.payload, message.FIN);
-      // }
-
- 
+    reassembler_.insert(stream_index, message.payload, message.FIN); 
   }
 }
 
 TCPReceiverMessage TCPReceiver::send() const
 {
   TCPReceiverMessage message;
-
   if (ISN.has_value()) 
   {
     if (writer().is_closed()) 
@@ -62,11 +49,9 @@ TCPReceiverMessage TCPReceiver::send() const
       message.ackno = Wrap32::wrap(writer().bytes_pushed() + 1, ISN.value() );
     }
   }
-
   //account for max window size
   uint64_t max_window_size = UINT16_MAX;
   message.window_size = min(writer().available_capacity(), max_window_size);
-
   if (writer().has_error()) {
     message.RST = true;
   }
