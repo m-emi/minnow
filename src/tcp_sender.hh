@@ -51,5 +51,4 @@ private:
 
   std::queue<Wrap32> seqnos_;
 
-
 };

@@ -27,23 +27,37 @@ void TCPSender::push( const TransmitFunction& transmit )
 
 
   // Use read helper function from bytestream, it peeks and pops
-  reader().peek();
   // checkpoint should be bytes_popped
-  
 
 
-  (void)transmit;
+  TCPSenderMessage sender_msg;
+  sender_msg.SYN = 
+  sender_msg.FIN = 
+  sender_msg.payload =
+  sender_msg.RST =  
+  bool RST {};
+
+  while (window_left > 0)
+  {
+    transmit(sender_message);
+  }
 }
 
 TCPSenderMessage TCPSender::make_empty_message() const
 {
-  // Your code here.
+  // keep track of acknos
+  // set all the flags to false
+
   return {};
 }
 
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
-  //uint16_t window_start = msg.window_size;
+  uint16_t window_start = msg.window_size - sequence_numbers_in_flight();
+
+  // window_left = ackno;
+  // window_right = ackno + msg.window_size
+
   (void)msg;
 }
 
