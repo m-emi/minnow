@@ -48,4 +48,8 @@ private:
   ByteStream input_;
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
+
+  std::queue<Wrap32> seqnos_;
+
+
 };

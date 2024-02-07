@@ -5,8 +5,7 @@ using namespace std;
 
 uint64_t TCPSender::sequence_numbers_in_flight() const
 {
-  // Your code here.
-  return {};
+  return seqnos_.size();
 }
 
 uint64_t TCPSender::consecutive_retransmissions() const
@@ -28,8 +27,9 @@ void TCPSender::push( const TransmitFunction& transmit )
 
 
   // Use read helper function from bytestream, it peeks and pops
-
-
+  reader().peek();
+  // checkpoint should be bytes_popped
+  
 
 
   (void)transmit;
@@ -43,7 +43,7 @@ TCPSenderMessage TCPSender::make_empty_message() const
 
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
-  // Your code here.
+  //uint16_t window_start = msg.window_size;
   (void)msg;
 }
 
