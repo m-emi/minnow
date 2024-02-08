@@ -6,8 +6,7 @@ using namespace std;
 
 uint64_t TCPSender::sequence_numbers_in_flight() const
 {
-  return {};
-  //return seqnos_.size();
+  return seqnos_in_flight;
 }
 
 uint64_t TCPSender::consecutive_retransmissions() const
@@ -33,15 +32,23 @@ void TCPSender::push( const TransmitFunction& transmit )
 
 
 
-  // construct a TCPSenderMessage
+  // construct a TCPSenderMessage with SYN 
+  if (reader().bytes_popped() == 0)
+  {
   TCPSenderMessage sender_msg;
   sender_msg.SYN = true;
   sender_msg.seqno = isn_;
+  seqnos_in_flight += sender_msg.sequence_length();
   transmit(sender_msg);
+  }
 
+  if (read().bytes_popped() > 0)
+  {
+    TCPSenderMessage sender_msg;
+    sender_msg.SYN = false;
+    sender_msg_queue_.push(sender_msg);
+  }
   
-
-  // sender_msg_queue_.push(sender_msg);
 
   
   // while (window_start > 0)
@@ -54,22 +61,18 @@ void TCPSender::push( const TransmitFunction& transmit )
 
 TCPSenderMessage TCPSender::make_empty_message() const
 {
-  // keep track of acknos
-  // set all the flags to false
-
-  return {};
+  TCPSenderMessage empty_sender_msg;
+  empty_sender_msg.seqno = Wrap32::wrap(reader().bytes_popped() + 1, isn_);
+  return empty_sender_msg;
 }
 
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
-  // total window 
-  window_start = msg.ackno.value() + msg.window_size;
-
-  
-  // how do you know there is a SYN or FIN flag
-  ack_seqno_ = msg.ackno.value();
-
-
+  if(msg.ackno.has_value()) 
+  {
+    window_size_ = msg.window_size;
+    uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, curr_abs_seqno);
+  }
 }
 
 void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& transmit )
