@@ -46,14 +46,15 @@ void TCPSender::push( const TransmitFunction& transmit )
     {
       msg.seqno = isn_ + curr_abs_seqno_; // Wrap32
     }
+  
+
+
     // Get payload 
-    uint64_t payload_size = min(MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
-    string payload = reader().peek().substr(0, payload_size);
-    writer().pop(payload_size)
-
-
-
-
+    uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
+    string payload = string(reader().peek().substr(0, payload_size));
+    msg.payload = payload;
+    // remove segment of payload from the bytestream
+    input_.reader().pop(payload_size);
 
     seqnos_in_flight_ += msg.sequence_length();
     curr_abs_seqno_ += msg.sequence_length();
@@ -62,7 +63,7 @@ void TCPSender::push( const TransmitFunction& transmit )
 
 
     // add to queue
-    msg_queue_.push(msg);
+    msg_queue_.push(queue_entry(msg.seqno, msg));
     
 
     transmit(msg);
