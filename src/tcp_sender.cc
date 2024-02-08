@@ -40,25 +40,33 @@ void TCPSender::push( const TransmitFunction& transmit )
     {
       msg.SYN = true;
       msg.seqno = isn_;
+      SYN_sent_ = true;
     }
+    else
+    {
+      msg.seqno = isn_ + curr_abs_seqno_; // Wrap32
+    }
+    // Get payload 
+    string payload = reader()
+    writer().pop(payload_size)
+
+
+
 
 
     seqnos_in_flight_ += msg.sequence_length();
+    curr_abs_seqno_ += msg.sequence_length();
+
+
+
+
+    // add to queue
+    msg_queue_.push(msg);
+    
+
     transmit(msg);
   }
 
-
-
-
-  
-
-  
-  // while (window_start > 0)
-  // {
-  //   transmit(sender_msg_queue_.front());
-  //   sender_msg_queue.pop();
-  // }
-  // (void)transmit;
 }
 
 TCPSenderMessage TCPSender::make_empty_message() const

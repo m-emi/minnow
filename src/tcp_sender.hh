@@ -49,11 +49,11 @@ private:
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
 
-  std::queue<TCPSenderMessage> sender_msg_queue_ {};
+  std::queue<TCPSenderMessage> msg_queue_ {};
   std::optional<Wrap32> window_start;
 
   uint64_t seqnos_in_flight_ {0};
-  //uint64_t curr_abs_seqno_ {0};
+  uint64_t curr_abs_seqno_ {0};
 
   uint64_t window_size_ {1}; // Window size is always at least 1
   
