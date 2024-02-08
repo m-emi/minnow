@@ -47,7 +47,8 @@ void TCPSender::push( const TransmitFunction& transmit )
       msg.seqno = isn_ + curr_abs_seqno_; // Wrap32
     }
     // Get payload 
-    string payload = reader()
+    uint64_t payload_size = min(MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
+    string payload = reader().peek().substr(0, payload_size);
     writer().pop(payload_size)
 
 
