@@ -1,11 +1,13 @@
 #include "tcp_sender.hh"
 #include "tcp_config.hh"
+#include <iostream> 
 
 using namespace std;
 
 uint64_t TCPSender::sequence_numbers_in_flight() const
 {
-  return seqnos_.size();
+  return {};
+  //return seqnos_.size();
 }
 
 uint64_t TCPSender::consecutive_retransmissions() const
@@ -30,17 +32,24 @@ void TCPSender::push( const TransmitFunction& transmit )
   // checkpoint should be bytes_popped
 
 
-  TCPSenderMessage sender_msg;
-  sender_msg.SYN = 
-  sender_msg.FIN = 
-  sender_msg.payload =
-  sender_msg.RST =  
-  bool RST {};
 
-  while (window_left > 0)
-  {
-    transmit(sender_message);
-  }
+  // construct a TCPSenderMessage
+  TCPSenderMessage sender_msg;
+  sender_msg.SYN = true;
+  sender_msg.seqno = isn_;
+  transmit(sender_msg);
+
+  
+
+  // sender_msg_queue_.push(sender_msg);
+
+  
+  // while (window_start > 0)
+  // {
+  //   transmit(sender_msg_queue_.front());
+  //   sender_msg_queue.pop();
+  // }
+  // (void)transmit;
 }
 
 TCPSenderMessage TCPSender::make_empty_message() const
@@ -53,12 +62,14 @@ TCPSenderMessage TCPSender::make_empty_message() const
 
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
-  uint16_t window_start = msg.window_size - sequence_numbers_in_flight();
+  // total window 
+  window_start = msg.ackno.value() + msg.window_size;
 
-  // window_left = ackno;
-  // window_right = ackno + msg.window_size
+  
+  // how do you know there is a SYN or FIN flag
+  ack_seqno_ = msg.ackno.value();
 
-  (void)msg;
+
 }
 
 void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& transmit )
