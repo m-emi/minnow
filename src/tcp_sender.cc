@@ -6,7 +6,7 @@ using namespace std;
 
 uint64_t TCPSender::sequence_numbers_in_flight() const
 {
-  return seqnos_in_flight;
+  return seqnos_in_flight_;
 }
 
 uint64_t TCPSender::consecutive_retransmissions() const
@@ -30,24 +30,26 @@ void TCPSender::push( const TransmitFunction& transmit )
   // Use read helper function from bytestream, it peeks and pops
   // checkpoint should be bytes_popped
 
+  // why create a message if you are not going to send it...
+  // only create it if you can send it.
+
+  while (window_size_ > sequence_numbers_in_flight()) {
+    TCPSenderMessage msg;
+    // track if SYN has sent
+    if (!SYN_sent_) 
+    {
+      msg.SYN = true;
+      msg.seqno = isn_;
+    }
 
 
-  // construct a TCPSenderMessage with SYN 
-  if (reader().bytes_popped() == 0)
-  {
-  TCPSenderMessage sender_msg;
-  sender_msg.SYN = true;
-  sender_msg.seqno = isn_;
-  seqnos_in_flight += sender_msg.sequence_length();
-  transmit(sender_msg);
+    seqnos_in_flight_ += msg.sequence_length();
+    transmit(msg);
   }
 
-  if (read().bytes_popped() > 0)
-  {
-    TCPSenderMessage sender_msg;
-    sender_msg.SYN = false;
-    sender_msg_queue_.push(sender_msg);
-  }
+
+
+
   
 
   
@@ -68,10 +70,10 @@ TCPSenderMessage TCPSender::make_empty_message() const
 
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
-  if(msg.ackno.has_value()) 
+  if (msg.ackno.has_value()) 
   {
-    window_size_ = msg.window_size;
-    uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, curr_abs_seqno);
+    window_size_ = msg.window_size - seqnos_in_flight_;
+   // uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, curr_abs_seqno_);
   }
 }
 
