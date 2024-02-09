@@ -55,8 +55,10 @@ private:
   uint64_t seqnos_in_flight_ {0};
 
   uint64_t window_size_ {1}; // Window size is always at least 1
+
+  uint64_t next_seqno_ {0};
   
-  bool SYN_sent_ {};
+  //bool SYN_sent_ {};
 
 };
 

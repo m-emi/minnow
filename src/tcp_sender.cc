@@ -1,5 +1,6 @@
 #include "tcp_sender.hh"
 #include "tcp_config.hh"
+#include "wrapping_integers.hh"
 #include <iostream> 
 
 using namespace std;
@@ -33,30 +34,32 @@ void TCPSender::push( const TransmitFunction& transmit )
   // why create a message if you are not going to send it...
   // only create it if you can send it.
 
-  while (window_size_ > sequence_numbers_in_flight()) 
+  while (window_size_ > 0) 
   {
     TCPSenderMessage msg;
     // track if SYN has sent
-    if (!SYN_sent_) 
+    if (next_seqno_ == 0) 
     {
       msg.SYN = true;
       msg.seqno = isn_;
-      SYN_sent_ = true;
+      //next_seqno_ += 1;
     }
     // SYN already sent
     else
     {
-      msg.seqno = isn_ + reader().bytes_popped(); // Wrap32
+      msg.seqno = Wrap32::wrap(next_seqno_,isn_); // Wrap32
     }
     
-    // Get payload 
-    uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
-    string payload = string(reader().peek().substr(0, payload_size));
-    msg.payload = payload;
-    // remove segment of payload from the bytestream
-    input_.reader().pop(payload_size);
+    // // Get payload 
+    // uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
+    // string payload = string(reader().peek().substr(0, payload_size));
+    // msg.payload = payload;
+    // // remove segment of payload from the bytestream
+    // input_.reader().pop(payload_size);
+
 
     seqnos_in_flight_ += msg.sequence_length();
+    next_seqno_ += msg.sequence_length();
 
     // add to queue
     outstanding_queue_.push(msg);
@@ -69,7 +72,7 @@ void TCPSender::push( const TransmitFunction& transmit )
 TCPSenderMessage TCPSender::make_empty_message() const
 {
   TCPSenderMessage empty_sender_msg;
-  empty_sender_msg.seqno = Wrap32::wrap(reader().bytes_popped() + 1, isn_);
+  empty_sender_msg.seqno = Wrap32::wrap(next_seqno_ + 1, isn_);
   return empty_sender_msg;
 }
 
@@ -78,12 +81,12 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   if (msg.ackno.has_value()) 
   {
     window_size_ = msg.window_size - seqnos_in_flight_;
-    uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, reader().bytes_popped() - 1);
+    uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, next_seqno_);
     // Check of the queue is non empty
     if (!outstanding_queue_.empty())
     {
       TCPSenderMessage front_msg = outstanding_queue_.front();
-      uint64_t front_seqno = front_msg.seqno.unwrap(isn_, reader().bytes_popped() - 1) + front_msg.sequence_length();
+      uint64_t front_seqno = front_msg.seqno.unwrap(isn_, next_seqno_) + front_msg.sequence_length();
 
       // If your received seqno >= oldest seqno, oldest msg can be popped.
       if ( abs_seqno >= front_seqno)
