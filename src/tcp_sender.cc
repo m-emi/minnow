@@ -34,15 +34,20 @@ void TCPSender::push( const TransmitFunction& transmit )
   // why create a message if you are not going to send it...
   // only create it if you can send it.
 
-  while (window_size_ > 0) 
+  // There is nothing to push.
+  if (reader().bytes_buffered() == 0 && next_seqno_ != 0)
   {
+    return;
+  }
+
+  //while (window_size_ > sequence_numbers_in_flight()) 
+  //{
     TCPSenderMessage msg;
     // track if SYN has sent
     if (next_seqno_ == 0) 
     {
       msg.SYN = true;
       msg.seqno = isn_;
-      //next_seqno_ += 1;
     }
     // SYN already sent
     else
@@ -50,12 +55,12 @@ void TCPSender::push( const TransmitFunction& transmit )
       msg.seqno = Wrap32::wrap(next_seqno_,isn_); // Wrap32
     }
     
-    // // Get payload 
-    // uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
-    // string payload = string(reader().peek().substr(0, payload_size));
-    // msg.payload = payload;
-    // // remove segment of payload from the bytestream
-    // input_.reader().pop(payload_size);
+    // Get payload 
+    uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
+    string payload = string(reader().peek().substr(0, payload_size));
+    msg.payload = payload;
+    // remove segment of payload from the bytestream
+    input_.reader().pop(payload_size);
 
 
     seqnos_in_flight_ += msg.sequence_length();
@@ -65,14 +70,14 @@ void TCPSender::push( const TransmitFunction& transmit )
     outstanding_queue_.push(msg);
     // transmit
     transmit(msg);
-  }
+  //}
 
 }
 
 TCPSenderMessage TCPSender::make_empty_message() const
 {
   TCPSenderMessage empty_sender_msg;
-  empty_sender_msg.seqno = Wrap32::wrap(next_seqno_ + 1, isn_);
+  empty_sender_msg.seqno = Wrap32::wrap(next_seqno_, isn_);
   return empty_sender_msg;
 }
 
@@ -82,6 +87,8 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   {
     window_size_ = msg.window_size - seqnos_in_flight_;
     uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, next_seqno_);
+
+
     // Check of the queue is non empty
     if (!outstanding_queue_.empty())
     {
