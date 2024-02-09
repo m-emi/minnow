@@ -49,31 +49,16 @@ private:
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
 
-  std::priority_queue<TCPSenderMessage> msg_queue {};
-  std::optional<Wrap32> window_start;
+  std::queue<TCPSenderMessage> outstanding_queue_ {};
+  std::optional<Wrap32> window_start_;
 
   uint64_t seqnos_in_flight_ {0};
-  uint64_t curr_abs_seqno_ {0};
 
   uint64_t window_size_ {1}; // Window size is always at least 1
   
   bool SYN_sent_ {};
 
-  struct queue_entry {
-    uint64_t priority;
-    TCPSenderMessage sender_msg;
-
-    // Constructor for convenience
-    queue_entry(int priority, const TCPSenderMessage& sender_msg) : priority(priority), sender_msg(sender_msg) {}
-
-    // Overload the less-than operator for comparing items by priority
-    bool operator<(const queue_entry& other) const {
-        // Lower priority items should have higher precedence in the priority queue
-        return priority > other.priority;
-    }
 };
 
 
 
-
-};

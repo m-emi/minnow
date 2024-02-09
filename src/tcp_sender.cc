@@ -33,7 +33,8 @@ void TCPSender::push( const TransmitFunction& transmit )
   // why create a message if you are not going to send it...
   // only create it if you can send it.
 
-  while (window_size_ > sequence_numbers_in_flight()) {
+  while (window_size_ > sequence_numbers_in_flight()) 
+  {
     TCPSenderMessage msg;
     // track if SYN has sent
     if (!SYN_sent_) 
@@ -42,13 +43,12 @@ void TCPSender::push( const TransmitFunction& transmit )
       msg.seqno = isn_;
       SYN_sent_ = true;
     }
+    // SYN already sent
     else
     {
-      msg.seqno = isn_ + curr_abs_seqno_; // Wrap32
+      msg.seqno = isn_ + reader().bytes_popped(); // Wrap32
     }
-  
-
-
+    
     // Get payload 
     uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
     string payload = string(reader().peek().substr(0, payload_size));
@@ -57,15 +57,10 @@ void TCPSender::push( const TransmitFunction& transmit )
     input_.reader().pop(payload_size);
 
     seqnos_in_flight_ += msg.sequence_length();
-    curr_abs_seqno_ += msg.sequence_length();
-
-
-
 
     // add to queue
-    msg_queue_.push(queue_entry(msg.seqno, msg));
-    
-
+    outstanding_queue_.push(msg);
+    // transmit
     transmit(msg);
   }
 
@@ -83,7 +78,20 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   if (msg.ackno.has_value()) 
   {
     window_size_ = msg.window_size - seqnos_in_flight_;
-   // uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, curr_abs_seqno_);
+    uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, reader().bytes_popped() - 1);
+    // Check of the queue is non empty
+    if (!outstanding_queue_.empty())
+    {
+      TCPSenderMessage front_msg = outstanding_queue_.front();
+      uint64_t front_seqno = front_msg.seqno.unwrap(isn_, reader().bytes_popped() - 1) + front_msg.sequence_length();
+
+      // If your received seqno >= oldest seqno, oldest msg can be popped.
+      if ( abs_seqno >= front_seqno)
+      {
+        seqnos_in_flight_ -= front_msg.sequence_length();
+        outstanding_queue_.pop();
+      }
+    }
   }
 }
 
