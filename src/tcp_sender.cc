@@ -1,5 +1,6 @@
 #include "tcp_sender.hh"
 #include "tcp_config.hh"
+#include "tcp_sender_message.hh"
 #include "wrapping_integers.hh"
 #include <iostream> 
 
@@ -95,13 +96,45 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
       TCPSenderMessage front_msg = outstanding_queue_.front();
       uint64_t front_seqno = front_msg.seqno.unwrap(isn_, next_seqno_) + front_msg.sequence_length();
 
+      TCPSenderMessage back_msg = outstanding_queue_.back();
+      uint64_t back_seqno = back_msg.seqno.unwrap(isn_, next_seqno_) + back_msg.sequence_length();
+
       // If your received seqno >= oldest seqno, oldest msg can be popped.
-      if ( abs_seqno >= front_seqno)
+
+      
+      // front 
+      if ( abs_seqno >= front_seqno && abs_seqno <= back_seqno)
       {
         seqnos_in_flight_ -= front_msg.sequence_length();
         outstanding_queue_.pop();
       }
+      else if (abs_seqno >= back_seqno) 
+      {
+        //back
+        if ( abs_seqno >= back_seqno)
+        {
+          seqnos_in_flight_ = 0;
+          queue<TCPSenderMessage> empty;
+          swap(outstanding_queue_, empty );
+        }
+      }
     }
+    // while (!outstanding_queue_.empty())
+    // {
+    //   TCPSenderMessage front_msg = outstanding_queue_.front();
+    //   uint64_t front_seqno = front_msg.seqno.unwrap(isn_, next_seqno_) + front_msg.sequence_length();
+
+    //   // If your received seqno >= oldest seqno, oldest msg can be popped.
+    //   if ( abs_seqno >= front_seqno)
+    //   {
+    //     seqnos_in_flight_ -= front_msg.sequence_length();
+    //     outstanding_queue_.pop();
+    //   }
+    //   else 
+    //   {
+    //     break;
+    //   }
+    // }
   }
 }
 
