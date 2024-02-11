@@ -52,7 +52,7 @@ private:
   std::queue<TCPSenderMessage> outstanding_queue_ {};
   std::optional<Wrap32> window_start_;
 
-  uint64_t seqnos_in_flight_ {0};
+  //uint64_t seqnos_in_flight_ {0};
 
   uint64_t window_size_ {1}; // Window size is always at least 1
 

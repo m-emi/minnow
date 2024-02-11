@@ -8,7 +8,11 @@ using namespace std;
 
 uint64_t TCPSender::sequence_numbers_in_flight() const
 {
-  return seqnos_in_flight_;
+  if (!outstanding_queue_.empty())
+  {
+    return next_seqno_ - outstanding_queue_.front().seqno.unwrap(isn_, next_seqno_);
+  }
+  return 0;
 }
 
 uint64_t TCPSender::consecutive_retransmissions() const
@@ -67,7 +71,7 @@ void TCPSender::push( const TransmitFunction& transmit )
     input_.reader().pop(payload_size);
 
 
-    seqnos_in_flight_ += msg.sequence_length();
+    //seqnos_in_flight_ += msg.sequence_length();
     next_seqno_ += msg.sequence_length();
 
     // add to queue
@@ -89,40 +93,40 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
 {
   if (msg.ackno.has_value()) 
   {
-    window_size_ = msg.window_size - seqnos_in_flight_;
+    window_size_ = msg.window_size - sequence_numbers_in_flight();
     uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, next_seqno_);
 
 
-    // // Check of the queue is non empty
-    // if (!outstanding_queue_.empty())
-    // {
-    //   TCPSenderMessage front_msg = outstanding_queue_.front();
-    //   uint64_t front_seqno = front_msg.seqno.unwrap(isn_, next_seqno_) + front_msg.sequence_length();
-
-    //   // If your received seqno >= oldest seqno, oldest msg can be popped.
-    //   // front 
-    //   if ( abs_seqno >= front_seqno )
-    //   {
-    //     seqnos_in_flight_ -= front_msg.sequence_length();
-    //     outstanding_queue_.pop();
-    //   }
-    // }
-    while (!outstanding_queue_.empty())
+    // Check of the queue is non empty
+    if (!outstanding_queue_.empty())
     {
       TCPSenderMessage front_msg = outstanding_queue_.front();
       uint64_t front_seqno = front_msg.seqno.unwrap(isn_, next_seqno_) + front_msg.sequence_length();
 
       // If your received seqno >= oldest seqno, oldest msg can be popped.
-      if ( abs_seqno >= front_seqno)
+      // front 
+      if ( abs_seqno >= front_seqno )
       {
-        seqnos_in_flight_ -= front_msg.sequence_length();
+       //seqnos_in_flight_ -= front_msg.sequence_length();
         outstanding_queue_.pop();
       }
-      else 
-      {
-        break;
-      }
     }
+    // while (!outstanding_queue_.empty())
+    // {
+    //   TCPSenderMessage front_msg = outstanding_queue_.front();
+    //   uint64_t front_seqno = front_msg.seqno.unwrap(isn_, next_seqno_) + front_msg.sequence_length();
+
+    //   // If your received seqno >= oldest seqno, oldest msg can be popped.
+    //   if ( abs_seqno >= front_seqno)
+    //   {
+    //     //seqnos_in_flight_ -= front_msg.sequence_length();
+    //     outstanding_queue_.pop();
+    //   }
+    //   else 
+    //   {
+    //     break;
+    //   }
+    // }
   }
 }
 
