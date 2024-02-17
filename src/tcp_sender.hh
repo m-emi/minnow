@@ -57,8 +57,8 @@ private:
 
   uint64_t next_seqno_ {0};
   
-  //bool SYN_sent_ {};
-
+  uint64_t total_time_ {0};
+  uint64_t retransmissions {};
 };
 
 

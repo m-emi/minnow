@@ -102,8 +102,18 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
 
 void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& transmit )
 {
-  // Your code here.
+  // how many milliseconds since the last time tick was called
   (void)ms_since_last_tick;
+  total_time_ += ms_since_last_tick;
+
+  // alarm goes off once RTO has elapsed
+
+
+  // if tick is called and retransmission timer has expired
+    // retransmit the earliest (lowest sequence number) segment that has not been fully acknowledged by the receiver
+    transmit(outstanding_queue_.front());
+    retransmissions++;
+
   (void)transmit;
   (void)initial_RTO_ms_;
 }
