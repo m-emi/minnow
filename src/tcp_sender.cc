@@ -17,8 +17,7 @@ uint64_t TCPSender::sequence_numbers_in_flight() const
 
 uint64_t TCPSender::consecutive_retransmissions() const
 {
-  // Your code here.
-  return {};
+  return retransmissions_;
 }
 
 void TCPSender::push( const TransmitFunction& transmit )
@@ -57,6 +56,11 @@ void TCPSender::push( const TransmitFunction& transmit )
       break;
     }
 
+    if (outstanding_queue_.empty())
+    {
+      timer_ = 0;
+    }
+
     next_seqno_ += msg.sequence_length();
 
     // add to queue
@@ -91,6 +95,8 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
       if ( abs_seqno >= front_seqno)
       {
         outstanding_queue_.pop();
+        // reset timer
+        RTO_ms_ = initial_RTO_ms_;
       }
       else 
       {
@@ -104,15 +110,18 @@ void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& trans
 {
   // how many milliseconds since the last time tick was called
   (void)ms_since_last_tick;
-  total_time_ += ms_since_last_tick;
+  timer_ += ms_since_last_tick;
 
   // alarm goes off once RTO has elapsed
-
+  if (timer_ >= RTO_ms_)
+  {
+    transmit(outstanding_queue_.front());
+  }
 
   // if tick is called and retransmission timer has expired
     // retransmit the earliest (lowest sequence number) segment that has not been fully acknowledged by the receiver
-    transmit(outstanding_queue_.front());
-    retransmissions++;
+    
+    retransmissions_++;
 
   (void)transmit;
   (void)initial_RTO_ms_;
