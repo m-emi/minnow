@@ -58,7 +58,7 @@ private:
   uint64_t next_seqno_ {0};
   
   uint64_t timer_ {0};
-  uint64_t retransmissions_ {};
+  uint64_t consecutive_retransmissions_ {};
   uint64_t RTO_ms_ {};
 
 };
