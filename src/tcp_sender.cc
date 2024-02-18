@@ -52,6 +52,13 @@ void TCPSender::push( const TransmitFunction& transmit )
     read(input_.reader(), payload_size, payload);
     msg.payload = payload;
 
+    if (reader().is_finished()) // closed and fully popped
+    {
+      msg.FIN = true;
+    }
+
+
+
     if (msg.sequence_length() == 0) {
       break;
     }
@@ -99,7 +106,6 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
         // reset timer
         RTO_ms_ = initial_RTO_ms_;
         consecutive_retransmissions_ = 0;
-
       }
       else 
       {
@@ -117,8 +123,6 @@ void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& trans
 {
   timer_ += ms_since_last_tick;
   // alarm goes off once RTO has elapsed. Must be something in the queue.
-  cerr << timer_ << ", " << RTO_ms_ << endl;
-
   if (!outstanding_queue_.empty() && timer_ >= RTO_ms_)
   {
     transmit(outstanding_queue_.front());
