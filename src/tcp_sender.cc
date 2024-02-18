@@ -22,16 +22,7 @@ uint64_t TCPSender::consecutive_retransmissions() const
 
 void TCPSender::push( const TransmitFunction& transmit )
 {
-  // TCPSender asked to fill the window
-  // reads from the stream and sends as many TCPSenderMessages as possible as long as there are new bytes to be read and space in the window
-
-  // There is nothing to push OR all bytes, including FIN flag, have been pushed
-  // if ((reader().bytes_buffered() == 0 && next_seqno_ != 0))
-  // {
-  //   cerr << "\nreturned prematurely... sad.\n";
-  //   return;
-  // }
-
+  // TCPSender asked to fill the window unti it can't.
   while (window_size_ > sequence_numbers_in_flight() ) 
   {
     TCPSenderMessage msg;
@@ -53,22 +44,21 @@ void TCPSender::push( const TransmitFunction& transmit )
     read(input_.reader(), payload_size, payload);
     msg.payload = payload;
 
-    //cerr << payload << "-";
-    //cerr << reader().is_finished();
+    cerr << "\nmsg.sequence_length(): " << msg.sequence_length(); 
+    cerr << "\npayload.size(): " << payload.size(); 
+    cerr << "\npayload_size: " << payload_size; 
+    cerr << "\nwindow size: " << window_size_;
 
-    if (!fin_received && writer().is_closed()) // no more bytes being written
-    {
-      
-      cerr << "We reached fin";
-
+    if (!fin_received && writer().is_closed() && msg.sequence_length() + sequence_numbers_in_flight() < window_size_) // no more bytes being written
+    { 
       msg.FIN = true;
       fin_received = true;
+      cerr << "\nmsg.FIN: " << msg.FIN;
     }
 
-
-    // no payload or SYN ot FIN flag set
+    // no payload or SYN or FIN flag set
     if (msg.sequence_length() == 0) {
-      cerr << "msg sequence length is 0";
+      // cerr << "msg sequence length is 0";
       break;
     }
 
@@ -81,7 +71,7 @@ void TCPSender::push( const TransmitFunction& transmit )
     next_seqno_ += msg.sequence_length();
 
     // add to queue
-    cerr << "\n" + payload + " added to queue\n";
+    //cerr << "\n" + payload + " added to queue\n";
     outstanding_queue_.push(msg);
     // transmit
     transmit(msg);
@@ -98,11 +88,14 @@ TCPSenderMessage TCPSender::make_empty_message() const
 
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
+  window_size_ = msg.window_size;
   if (msg.ackno.has_value()) 
   {
     //window_size_ = msg.window_size - sequence_numbers_in_flight();
-    window_size_ = msg.window_size;
+    //window_size_ = msg.window_size;
     uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, next_seqno_);
+
+    // Edge case in test 31
     if (abs_seqno > next_seqno_){
       return;
     }
@@ -120,16 +113,17 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
         // reset timer
         RTO_ms_ = initial_RTO_ms_;
         consecutive_retransmissions_ = 0;
+        if (!outstanding_queue_.empty())
+        {
+          timer_ = 0;
+        }
       }
       else 
       {
         break;
       }
     }
-    if (!outstanding_queue_.empty())
-    {
-      timer_ = 0;
-    }
+    
   }
 }
 
@@ -139,6 +133,7 @@ void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& trans
   // alarm goes off once RTO has elapsed. Must be something in the queue.
   if (!outstanding_queue_.empty() && timer_ >= RTO_ms_)
   {
+    //cerr << outstanding_queue_.front().payload;
     transmit(outstanding_queue_.front());
     // window size always greater than 0.
     RTO_ms_ *= 2;
