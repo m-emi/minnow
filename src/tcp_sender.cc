@@ -25,12 +25,12 @@ void TCPSender::push( const TransmitFunction& transmit )
   // TCPSender asked to fill the window
   // reads from the stream and sends as many TCPSenderMessages as possible as long as there are new bytes to be read and space in the window
 
-  // There is nothing to push.
-  if (reader().bytes_buffered() == 0 && next_seqno_ != 0)
-  {
-    cerr << "\nreturned prematurely... sad.\n";
-    return;
-  }
+  // There is nothing to push OR all bytes, including FIN flag, have been pushed
+  // if ((reader().bytes_buffered() == 0 && next_seqno_ != 0))
+  // {
+  //   cerr << "\nreturned prematurely... sad.\n";
+  //   return;
+  // }
 
   while (window_size_ > sequence_numbers_in_flight() ) 
   {
@@ -103,6 +103,10 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
     //window_size_ = msg.window_size - sequence_numbers_in_flight();
     window_size_ = msg.window_size;
     uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, next_seqno_);
+    if (abs_seqno > next_seqno_){
+      return;
+    }
+
 
     while (!outstanding_queue_.empty())
     {
