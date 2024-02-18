@@ -50,16 +50,13 @@ void TCPSender::push( const TransmitFunction& transmit )
     read(input_.reader(), payload_size, payload);
     msg.payload = payload;
 
-    // cerr << "\nmsg.sequence_length(): " << msg.sequence_length(); 
-    // cerr << "\npayload.size(): " << payload.size(); 
-    // cerr << "\npayload_size: " << payload_size; 
-    // cerr << "\nwindow size: " << window_size;
-
-    if (!fin_received && writer().is_closed() && msg.sequence_length() + sequence_numbers_in_flight() < window_size) // no more bytes being written
+    if (!fin_received && reader().is_finished() && msg.sequence_length() + sequence_numbers_in_flight() < window_size) // no more bytes being written
     { 
       msg.FIN = true;
       fin_received = true;
-      cerr << "\nmsg.FIN: " << msg.FIN;
+      cerr << "\nseq_length() + seqnos_in_flight = " << msg.sequence_length() + sequence_numbers_in_flight();
+      cerr << "\nwindow_size = " << window_size;
+
     }
 
     // no payload or SYN or FIN flag set
@@ -77,10 +74,14 @@ void TCPSender::push( const TransmitFunction& transmit )
     next_seqno_ += msg.sequence_length();
 
     // add to queue
-    //cerr << "\n" + payload + " added to queue\n";
     outstanding_queue_.push(msg);
     // transmit
     transmit(msg);
+
+    if (msg.FIN)
+    {
+      break;
+    }
   }
 
 }
