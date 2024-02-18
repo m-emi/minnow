@@ -61,6 +61,8 @@ private:
   uint64_t consecutive_retransmissions_ {};
   uint64_t RTO_ms_ {};
 
+  bool fin_received {};
+
 };
 
 

@@ -28,13 +28,14 @@ void TCPSender::push( const TransmitFunction& transmit )
   // There is nothing to push.
   if (reader().bytes_buffered() == 0 && next_seqno_ != 0)
   {
+    cerr << "\nreturned prematurely... sad.\n";
     return;
   }
 
   while (window_size_ > sequence_numbers_in_flight() ) 
   {
     TCPSenderMessage msg;
-    // track if SYN has sent
+    // track if SYN has been sent
     if (next_seqno_ == 0) 
     {
       msg.SYN = true;
@@ -52,14 +53,22 @@ void TCPSender::push( const TransmitFunction& transmit )
     read(input_.reader(), payload_size, payload);
     msg.payload = payload;
 
-    if (reader().is_finished()) // closed and fully popped
+    //cerr << payload << "-";
+    //cerr << reader().is_finished();
+
+    if (!fin_received && writer().is_closed()) // no more bytes being written
     {
+      
+      cerr << "We reached fin";
+
       msg.FIN = true;
+      fin_received = true;
     }
 
 
-
+    // no payload or SYN ot FIN flag set
     if (msg.sequence_length() == 0) {
+      cerr << "msg sequence length is 0";
       break;
     }
 
@@ -72,6 +81,7 @@ void TCPSender::push( const TransmitFunction& transmit )
     next_seqno_ += msg.sequence_length();
 
     // add to queue
+    cerr << "\n" + payload + " added to queue\n";
     outstanding_queue_.push(msg);
     // transmit
     transmit(msg);
