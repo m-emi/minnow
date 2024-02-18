@@ -2,6 +2,7 @@
 #include "tcp_config.hh"
 #include "tcp_sender_message.hh"
 #include "wrapping_integers.hh"
+#include <cstdint>
 #include <iostream> 
 
 using namespace std;
@@ -22,8 +23,13 @@ uint64_t TCPSender::consecutive_retransmissions() const
 
 void TCPSender::push( const TransmitFunction& transmit )
 {
+  uint64_t window_size = window_size_;
+  if (window_size == 0)
+  {
+    window_size++;
+  }
   // TCPSender asked to fill the window unti it can't.
-  while (window_size_ > sequence_numbers_in_flight() ) 
+  while (window_size > sequence_numbers_in_flight() ) 
   {
     TCPSenderMessage msg;
     // track if SYN has been sent
@@ -39,17 +45,17 @@ void TCPSender::push( const TransmitFunction& transmit )
     }
     
     // Get payload 
-    uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size_ - sequence_numbers_in_flight() - msg.SYN);
+    uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size - sequence_numbers_in_flight() - msg.SYN);
     string payload;
     read(input_.reader(), payload_size, payload);
     msg.payload = payload;
 
-    cerr << "\nmsg.sequence_length(): " << msg.sequence_length(); 
-    cerr << "\npayload.size(): " << payload.size(); 
-    cerr << "\npayload_size: " << payload_size; 
-    cerr << "\nwindow size: " << window_size_;
+    // cerr << "\nmsg.sequence_length(): " << msg.sequence_length(); 
+    // cerr << "\npayload.size(): " << payload.size(); 
+    // cerr << "\npayload_size: " << payload_size; 
+    // cerr << "\nwindow size: " << window_size;
 
-    if (!fin_received && writer().is_closed() && msg.sequence_length() + sequence_numbers_in_flight() < window_size_) // no more bytes being written
+    if (!fin_received && writer().is_closed() && msg.sequence_length() + sequence_numbers_in_flight() < window_size) // no more bytes being written
     { 
       msg.FIN = true;
       fin_received = true;
@@ -91,8 +97,6 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   window_size_ = msg.window_size;
   if (msg.ackno.has_value()) 
   {
-    //window_size_ = msg.window_size - sequence_numbers_in_flight();
-    //window_size_ = msg.window_size;
     uint64_t abs_seqno = msg.ackno.value().unwrap(isn_, next_seqno_);
 
     // Edge case in test 31
@@ -136,7 +140,10 @@ void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& trans
     //cerr << outstanding_queue_.front().payload;
     transmit(outstanding_queue_.front());
     // window size always greater than 0.
+    if (window_size_ > 0)
+    {
     RTO_ms_ *= 2;
+    }
     timer_ = 0;
     consecutive_retransmissions_++;
   }
