@@ -1,8 +1,8 @@
 #pragma once
 
 #include "byte_stream.hh"
-#include <vector>
 #include <optional>
+#include <vector>
 
 class Reassembler
 {
@@ -45,7 +45,7 @@ public:
 private:
   ByteStream output_; // the Reassembler writes to this ByteStream
 
-  std::string unassembled_bytes_ {}; 
+  std::string unassembled_bytes_ {};
   std::vector<bool> bitmap_ {};
   std::optional<uint64_t> total_size_ {};
 

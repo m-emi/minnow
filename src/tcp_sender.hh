@@ -52,18 +52,13 @@ private:
   std::queue<TCPSenderMessage> outstanding_queue_ {};
   std::optional<Wrap32> window_start_;
 
+  uint64_t window_size_ { 1 }; // Window size is always at least 1
 
-  uint64_t window_size_ {1}; // Window size is always at least 1
+  uint64_t next_seqno_ { 0 };
 
-  uint64_t next_seqno_ {0};
-  
-  uint64_t timer_ {0};
+  uint64_t timer_ { 0 };
   uint64_t consecutive_retransmissions_ {};
   uint64_t RTO_ms_ {};
 
   bool fin_received {};
-
 };
-
-
-
