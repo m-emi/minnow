@@ -32,6 +32,12 @@ void TCPSender::push( const TransmitFunction& transmit )
   while (window_size > sequence_numbers_in_flight() ) 
   {
     TCPSenderMessage msg;
+
+    if (reader().has_error()) 
+    {
+      msg.RST = true;
+    } 
+
     // track if SYN has been sent
     if (next_seqno_ == 0) 
     {
@@ -45,23 +51,22 @@ void TCPSender::push( const TransmitFunction& transmit )
     }
     
     // Get payload 
-    uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size - sequence_numbers_in_flight() - msg.SYN);
-    string payload;
-    read(input_.reader(), payload_size, payload);
-    msg.payload = payload;
+    if (!msg.RST)
+    {
+      uint64_t payload_size = min(TCPConfig::MAX_PAYLOAD_SIZE, window_size - sequence_numbers_in_flight() - msg.SYN);
+      string payload;
+      read(input_.reader(), payload_size, payload);
+      msg.payload = payload;
+    }
 
-    if (!fin_received && reader().is_finished() && msg.sequence_length() + sequence_numbers_in_flight() < window_size) // no more bytes being written
+    if (!fin_received && reader().is_finished() && msg.sequence_length() + sequence_numbers_in_flight() < window_size) // no more bytes being written and fully popped
     { 
       msg.FIN = true;
       fin_received = true;
-      cerr << "\nseq_length() + seqnos_in_flight = " << msg.sequence_length() + sequence_numbers_in_flight();
-      cerr << "\nwindow_size = " << window_size;
-
     }
 
     // no payload or SYN or FIN flag set
-    if (msg.sequence_length() == 0) {
-      // cerr << "msg sequence length is 0";
+    if (msg.sequence_length() == 0 && !msg.RST) {
       break;
     }
 
@@ -78,7 +83,7 @@ void TCPSender::push( const TransmitFunction& transmit )
     // transmit
     transmit(msg);
 
-    if (msg.FIN)
+    if (msg.FIN || msg.RST)
     {
       break;
     }
@@ -90,11 +95,21 @@ TCPSenderMessage TCPSender::make_empty_message() const
 {
   TCPSenderMessage empty_sender_msg;
   empty_sender_msg.seqno = Wrap32::wrap(next_seqno_, isn_);
+
+  if (reader().has_error()) 
+  {
+    empty_sender_msg.RST = true;
+  }
   return empty_sender_msg;
 }
 
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
+  if (msg.RST)
+  {
+    writer().set_error();
+    return;
+  }
   window_size_ = msg.window_size;
   if (msg.ackno.has_value()) 
   {
